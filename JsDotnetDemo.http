@@ -1,0 +1,6 @@
+@JsDotnetDemo_HostAddress = http://localhost:5032
+
+GET {{JsDotnetDemo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
