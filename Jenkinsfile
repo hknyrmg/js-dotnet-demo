@@ -2,16 +2,28 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
+        stage('Restore') {
+            steps {
+                sh 'dotnet restore'
+            }
+        }
+
         stage('Build') {
             steps {
-                echo 'Kod GitHub üzerinden çekildi!'
-                sh 'ls -la'
+                sh 'dotnet build --configuration Release --no-restore'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'dotnet test --configuration Release --no-build'
             }
         }
     }
