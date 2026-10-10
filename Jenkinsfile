@@ -5,7 +5,7 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'js-dotnet-demo'
+        IMAGE_NAME = 'ghcr.io/hknyrmg/js-dotnet-demo'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -38,20 +38,50 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                      -t ${IMAGE_NAME}:latest \
-                      .
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                        -t ${IMAGE_NAME}:latest \
+                        .
                 '''
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'ghcr-credentials',
+                        usernameVariable: 'GHCR_USER',
+                        passwordVariable: 'GHCR_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        echo "$GHCR_TOKEN" | docker login ghcr.io \
+                            -u "$GHCR_USER" \
+                            --password-stdin
+
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
+
+                        docker logout ghcr.io
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline başarılı. Docker image oluşturuldu.'
+            echo "Pipeline başarılı. Image: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
+
         failure {
-            echo 'Pipeline başarısız. Önceki stage loglarını kontrol et.'
+            echo 'Pipeline başarısız. Hata için ilgili stage loglarını kontrol et.'
+        }
+
+        always {
+            echo 'Pipeline tamamlandı.'
         }
     }
 }
