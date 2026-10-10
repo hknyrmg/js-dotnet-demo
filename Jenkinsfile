@@ -1,9 +1,15 @@
+
 pipeline {
     agent {
-    label 'dotnet'
-     }
-    stages {
+        label 'dotnet'
+    }
 
+    environment {
+        IMAGE_NAME = 'js-dotnet-demo'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm
@@ -26,6 +32,26 @@ pipeline {
             steps {
                 sh 'dotnet test --configuration Release --no-build'
             }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                    docker build \
+                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                      -t ${IMAGE_NAME}:latest \
+                      .
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline başarılı. Docker image oluşturuldu.'
+        }
+        failure {
+            echo 'Pipeline başarısız. Önceki stage loglarını kontrol et.'
         }
     }
 }
