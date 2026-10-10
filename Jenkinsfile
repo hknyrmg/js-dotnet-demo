@@ -6,6 +6,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'ghcr.io/hknyrmg/js-dotnet-demo'
         IMAGE_TAG = "${BUILD_NUMBER}"
+
         OPENSHIFT_SERVER = 'https://api.rm3.7wse.p1.openshiftapps.com:6443'
         OPENSHIFT_NAMESPACE = 'hknyrmg-dev'
         OPENSHIFT_DEPLOYMENT = 'js-dotnet-demo'
@@ -91,23 +92,38 @@ pipeline {
                         oc login "$OPENSHIFT_SERVER" \
                             --token="$OPENSHIFT_TOKEN"
 
-                        oc project "$OPENSHIFT_NAMESPACE"
+                        echo "Deployment yetkisi kontrol ediliyor..."
+
+                        oc auth can-i patch deployments \
+                            -n "$OPENSHIFT_NAMESPACE"
+
+                        echo "Mevcut deployment kontrol ediliyor..."
+
+                        oc get deployment "$OPENSHIFT_DEPLOYMENT" \
+                            -n "$OPENSHIFT_NAMESPACE"
 
                         echo "Deployment imajı güncelleniyor..."
 
                         oc set image \
+                            -n "$OPENSHIFT_NAMESPACE" \
                             "deployment/${OPENSHIFT_DEPLOYMENT}" \
                             "${OPENSHIFT_CONTAINER}=${IMAGE_NAME}:${IMAGE_TAG}"
 
                         echo "Yeni pod'un hazır olması bekleniyor..."
 
                         oc rollout status \
+                            -n "$OPENSHIFT_NAMESPACE" \
                             "deployment/${OPENSHIFT_DEPLOYMENT}" \
                             --timeout=180s
 
-                        echo "OpenShift deployment başarılı."
+                        echo "Deployment sonrası durum:"
+
+                        oc get deployment "$OPENSHIFT_DEPLOYMENT" \
+                            -n "$OPENSHIFT_NAMESPACE"
 
                         oc logout
+
+                        echo "OpenShift deployment başarılı."
                     '''
                 }
             }
